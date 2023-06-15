@@ -20,6 +20,10 @@ if len(X_train_std.columns) == 1:
 if len(meal_types.columns) == 1:
     meal_types = meal_types[meal_types.columns[0]]
 
+@app.route('/', methods=['GET'])
+def home():
+    return "API is running!"
+
 @app.route('/recommend', methods=['POST'])
 def recommend():
     data = request.get_json(force=True)  
