@@ -1,33 +1,56 @@
 from flask import Flask, request, jsonify
 import tensorflow as tf
+import pandas as pd
 
 app = Flask(__name__)
 
-# Load model kalian disini seperti pada kasus ini menggunakan model linear
-model = tf.keras.models.load_model('model.h5')
 
-@app.route('/', methods=['GET'])
-def home():
-    return "API is running!"
+model = tf.keras.models.load_model('food_model.h5')
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    # Get the input data from the request
-    data = request.get_json()
+X_train_mean = pd.read_csv('mean.csv', index_col=0)
+X_train_std = pd.read_csv('std.csv', index_col=0)
+y_train = pd.read_csv('y_train.csv', index_col=0)
+meal_types = pd.read_csv('meal_types.csv', index_col=0)
+if len(X_train_mean.columns) == 1:
+    X_train_mean = X_train_mean[X_train_mean.columns[0]]
 
-    # Lakukan Preprocess data terlebih dahulu jika ada
-    data_predict = int(data["data"])
-    print(data_predict)
+if len(X_train_std.columns) == 1:
+    X_train_std = X_train_std[X_train_std.columns[0]]
 
-    # Make predictions using the loaded model
-    predictions = model.predict([[1000]])
+if len(meal_types.columns) == 1:
+    meal_types = meal_types[meal_types.columns[0]]
 
-    # Lakukan Postprocess data terlebih dahulu jika ada
-    # ...
-    print(predictions[0])
-    # Return the predictions as a JSON response
-    # return (predictions)
-    return data
+@app.route('/recommend', methods=['POST'])
+def recommend():
+    data = request.get_json(force=True)  # get the json data
+
+    max_calorie = data['max_calorie']  # get the max calorie from the json
+
+    # Normalize user input
+    user_input = pd.DataFrame([[max_calorie]], columns=['calorie_normalized'])
+    user_input_norm = (user_input - X_train_mean) / X_train_std
+
+    # Get meal recommendations
+    recommendations = model.predict(user_input_norm)
+
+    response = []
+
+    for i, recommendation in enumerate(recommendations[0]):
+        recommended_foods = y_train[(y_train['meal_type'] == meal_types[i])][['food_id', 'serving_id', 'food_name', 'calories']]
+        recommended_food_samples = recommended_foods.sample(n=10)
+        for index, row in recommended_food_samples.iterrows():
+            food_id = row['food_id']
+            serving_id = row['serving_id']
+            food_name = row['food_name']
+            calories = row['calories']
+            response.append({
+                'food_id': food_id,
+                'serving_id': serving_id,
+                'food_name': food_name,
+                'calories': calories,
+            })
+
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
