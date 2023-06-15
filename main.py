@@ -26,7 +26,7 @@ def home():
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    data = request.get_json(force=True)  
+    data = request.get_json(force=True)
 
     calorie = data['calorie']  
 
@@ -47,12 +47,17 @@ def recommend():
             serving_id = row['serving_id']
             food_name = row['food_name']
             calories = row['calories']
-            response.append({
-                'food_id': food_id,
-                'serving_id': serving_id,
-                'food_name': food_name,
-                'calories': calories,
-            })
+            try:
+                response.append({
+                    'food_id': str(food_id),
+                    'serving_id': str(serving_id),
+                    'food_name': food_name,
+                    'calories': calories,
+                })
+            except Exception as e:
+                response.append({
+                    'error': f'An error occurred while converting food_id or serving_id to string: {e}'
+                })
 
     return jsonify(response)
 
