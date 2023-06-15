@@ -22,12 +22,12 @@ if len(meal_types.columns) == 1:
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    data = request.get_json(force=True)  # get the json data
+    data = request.get_json(force=True)  
 
-    max_calorie = data['max_calorie']  # get the max calorie from the json
+    calorie = data['calorie']  
 
     # Normalize user input
-    user_input = pd.DataFrame([[max_calorie]], columns=['calorie_normalized'])
+    user_input = pd.DataFrame([[calorie]], columns=['calorie_normalized'])
     user_input_norm = (user_input - X_train_mean) / X_train_std
 
     # Get meal recommendations
